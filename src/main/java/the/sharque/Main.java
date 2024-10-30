@@ -65,7 +65,7 @@ public class Main {
 
         double learned;
         do {
-            learned = model.learn(train, train_result, 1);
+            learned = model.learn(train, train_result, 0.001);
             double check = model.predict(test, test_result);
             System.out.printf("Train %f, Test %f\n", learned, check);
         } while (learned < 1);

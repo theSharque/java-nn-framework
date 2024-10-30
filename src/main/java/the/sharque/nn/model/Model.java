@@ -41,7 +41,7 @@ public class Model {
             double[] resultLine = test_result[i];
 
             reset();
-            IntStream.range(0, dataLine.length).parallel().forEach(j -> ((NeuronInput) input[j]).setData(dataLine[j]));
+            IntStream.range(0, dataLine.length).parallel().forEach(j -> input[j].setData(dataLine[j]));
 
             Arrays.stream(output).parallel().forEach(Neuron::predict);
 
@@ -79,7 +79,7 @@ public class Model {
             double[] resultLine = result[i];
 
             reset();
-            IntStream.range(0, dataLine.length).parallel().forEach(j -> ((NeuronInput) input[j]).setData(dataLine[j]));
+            IntStream.range(0, dataLine.length).parallel().forEach(j -> input[j].setData(dataLine[j]));
 
             Arrays.stream(output).parallel().forEach(Neuron::predict);
 

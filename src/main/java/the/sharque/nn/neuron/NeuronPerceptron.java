@@ -76,23 +76,26 @@ public class NeuronPerceptron implements Neuron {
             learnedBias += 1;
 
             double requiredValue = diff / inputs.length;
-            IntStream.range(0, inputs.length).parallel()
+            IntStream.range(0, inputs.length).sequential()
                     .filter(i -> isApplicable())
                     .forEach(i -> {
-                        System.out.printf("%d %.2f %.2f %.2f\n", i, requiredValue, weights[i], inputs[i].getResult());
+                        System.out.printf("B %d R:%+.2f W:%+.2f I:%+.2f C:%+.2f\n", i, requiredValue, weights[i], inputs[i].getResult(), weights[i] * inputs[i].getResult());
 
-                        //   R   W   I   C
-                        // +10  +3  +2  +6 ->
-                        // +10  -3  +2  -6 ->
-                        // -10  +3  +2  +6 ->
-                        // -10  -3  +2  -6 ->
+                        //   R   W   I   C    nW
+                        // +10  +3  +2  +6 -> +2
+                        // +10  -3  +2  -6 -> +8
+                        // -10  +3  +2  +6 -> -8
+                        // -10  -3  +2  -6 -> -2
 
-                        // +10  +3  -2  -6 ->
-                        // +10  -3  -2  +6 ->
-                        // -10  +3  -2  -6 ->
-                        // -10  -3  -2  +6 ->
+                        // +10  +3  -2  -6 -> -8
+                        // +10  -3  -2  +6 -> -2
+                        // -10  +3  -2  -6 -> +2
+                        // -10  -3  -2  +6 -> +8
 
-                        weights[i] += requiredValue * weights[i] * (1 / (EPSILON + inputs[i].getResult())) * learnRate;
+                        weights[i] += (requiredValue - inputs[i].getResult() * weights[i]) * (1 / (EPSILON + inputs[i].getResult())) * learnRate;
+
+                        System.out.printf("A %d R:%+.2f W:%+.2f I:%+.2f C:%+.2f\n", i, requiredValue, weights[i], inputs[i].getResult(), weights[i] * inputs[i].getResult());
+
                         weights[i] = limitValue(weights[i]);
                         learned[i] += 1;
 

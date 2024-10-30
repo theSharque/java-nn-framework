@@ -53,8 +53,8 @@ public class NeuronClassification implements Neuron {
         if (result != value) {
 //            inputs[(int) result].learn(learnRate, inputs[(int) value].getResult());
 //            inputs[(int) value].learn(learnRate, inputs[(int) result].getResult());
-            inputs[(int) result].learn(learnRate, -1);
-            inputs[(int) value].learn(learnRate, 1);
+            inputs[(int) result].learn(learnRate, inputs[(int) result].getResult() - 1);
+            inputs[(int) value].learn(learnRate, inputs[(int) value].getResult() + 1);
         }
     }
 }
