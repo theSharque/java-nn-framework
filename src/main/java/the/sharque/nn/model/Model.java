@@ -57,22 +57,6 @@ public class Model {
     }
 
     public double learn(double[][] data, double[][] result, double lr) {
-        if (data.length < 1) {
-            throw new IllegalArgumentException("Data must contain at least one row");
-        }
-
-        if (data.length != result.length) {
-            throw new IllegalArgumentException("Data size and result size must have the same length");
-        }
-
-        if (data[0].length != input.length) {
-            throw new IllegalArgumentException("Input size and data size must have the same length");
-        }
-
-        if (result[0].length != output.length) {
-            throw new IllegalArgumentException("Output size and result size must have the same length");
-        }
-
         double learned = 0;
         for (int i = 0; i < data.length; i++) {
             double[] dataLine = data[i];

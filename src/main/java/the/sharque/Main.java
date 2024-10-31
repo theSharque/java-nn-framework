@@ -13,9 +13,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import the.sharque.nn.model.Model;
 import the.sharque.nn.neuron.InputFlex;
+import the.sharque.nn.neuron.InputNeuron;
 import the.sharque.nn.neuron.Neuron;
 import the.sharque.nn.neuron.NeuronClassification;
-import the.sharque.nn.neuron.InputNeuron;
 import the.sharque.nn.neuron.NeuronPerceptron;
 
 public class Main {
@@ -29,7 +29,7 @@ public class Main {
         List<List<String>> dataset = readData(datasetFile);
         Collections.shuffle(dataset);
 
-        int length = 30;
+        int length = 200;
 
         double[][] train = dataset.stream().limit(length)
                 .map(line -> line.stream()
@@ -62,9 +62,10 @@ public class Main {
         double learned;
         double oldLearned = 0;
         do {
-            learned = model.learn(train, train_result, 0.0001);
+            learned = model.learn(train, train_result, 0.001);
             model.reset();
             double check = model.predict(test, test_result);
+
             if (learned > oldLearned) {
                 System.out.printf("%s Train %f, Test %f\n",
                         LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")), learned, check);
