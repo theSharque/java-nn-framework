@@ -15,7 +15,7 @@ public class NeuronClassification implements Neuron {
     private boolean calculated;
 
     public NeuronClassification(Neuron[]... inputs) {
-        this.inputs = Arrays.stream(inputs).flatMap(Stream::of).toArray(Neuron[]::new);
+        this.inputs = Arrays.stream(inputs).parallel().flatMap(Stream::of).toArray(Neuron[]::new);
         calculated = false;
     }
 
@@ -50,8 +50,13 @@ public class NeuronClassification implements Neuron {
         predict();
 
         if (result != value) {
-            inputs[(int) result].learn(learnRate, inputs[(int) result].getResult() - 1);
             inputs[(int) value].learn(learnRate, inputs[(int) value].getResult() + 1);
+            inputs[(int) result].learn(learnRate, inputs[(int) result].getResult() - 1);
         }
+    }
+
+    @Override
+    public void resetLearned() {
+        Arrays.stream(inputs).parallel().forEach(Neuron::resetLearned);
     }
 }

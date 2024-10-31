@@ -4,15 +4,15 @@ import java.util.Arrays;
 import java.util.stream.IntStream;
 import lombok.Getter;
 import the.sharque.nn.neuron.Neuron;
-import the.sharque.nn.neuron.NeuronInput;
+import the.sharque.nn.neuron.InputNeuron;
 
 public class Model {
 
-    private final NeuronInput[] input;
+    private final InputNeuron[] input;
     @Getter
     private final Neuron[] output;
 
-    public Model(NeuronInput[] input, Neuron[] output) {
+    public Model(InputNeuron[] input, Neuron[] output) {
         if (input == null || input.length < 1) {
             throw new IllegalArgumentException("Input neurons contain data");
         }
@@ -22,7 +22,7 @@ public class Model {
     }
 
     public void reset() {
-        Arrays.stream(output).forEach(Neuron::reset);
+        Arrays.stream(output).parallel().forEach(Neuron::reset);
     }
 
     public double predict(double[][] data, double[][] test_result) {
@@ -94,5 +94,9 @@ public class Model {
         }
 
         return learned / data.length;
+    }
+
+    public void resetLearned() {
+        Arrays.stream(output).parallel().forEach(Neuron::resetLearned);
     }
 }

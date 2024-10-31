@@ -12,4 +12,7 @@ public interface Neuron {
 
     default void learn(double learnRate, double value) {
     }
+
+    default void resetLearned() {
+    }
 }

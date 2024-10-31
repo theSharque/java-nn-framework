@@ -32,7 +32,7 @@ public class NeuronPerceptron implements Neuron {
     private final Neuron[] inputs;
 
     public NeuronPerceptron(Neuron[]... inputs) {
-        this.inputs = Arrays.stream(inputs).flatMap(Stream::of).toArray(Neuron[]::new);
+        this.inputs = Arrays.stream(inputs).parallel().flatMap(Stream::of).toArray(Neuron[]::new);
         weights = DoubleStream.generate(Utils::getRandomValue).limit(this.inputs.length).toArray();
         learned = DoubleStream.generate(() -> 0).limit(this.inputs.length).toArray();
 
@@ -92,5 +92,12 @@ public class NeuronPerceptron implements Neuron {
                         inputs[i].learn(learnRate, requiredChanges);
                     });
         }
+    }
+
+    @Override
+    public void resetLearned() {
+        this.learnedBias = 0;
+        Arrays.parallelSetAll(learned, value -> 0);
+        Arrays.stream(inputs).parallel().forEach(Neuron::resetLearned);
     }
 }

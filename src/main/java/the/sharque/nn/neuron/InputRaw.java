@@ -3,7 +3,7 @@ package the.sharque.nn.neuron;
 import lombok.Setter;
 
 @Setter
-public class InputRaw implements NeuronInput {
+public class InputRaw implements InputNeuron {
 
     private double data;
 

@@ -15,7 +15,7 @@ import the.sharque.nn.model.Model;
 import the.sharque.nn.neuron.InputFlex;
 import the.sharque.nn.neuron.Neuron;
 import the.sharque.nn.neuron.NeuronClassification;
-import the.sharque.nn.neuron.NeuronInput;
+import the.sharque.nn.neuron.InputNeuron;
 import the.sharque.nn.neuron.NeuronPerceptron;
 
 public class Main {
@@ -63,6 +63,7 @@ public class Main {
         double oldLearned = 0;
         do {
             learned = model.learn(train, train_result, 0.0001);
+            model.reset();
             double check = model.predict(test, test_result);
             if (learned > oldLearned) {
                 System.out.printf("%s Train %f, Test %f\n",
@@ -73,9 +74,9 @@ public class Main {
     }
 
     private static Model buildModel() {
-        NeuronInput[] inputs = Stream.generate(InputFlex::new)
+        InputNeuron[] inputs = Stream.generate(InputFlex::new)
                 .limit(7)
-                .toArray(NeuronInput[]::new);
+                .toArray(InputNeuron[]::new);
 
         Neuron[] layer1 = Stream.generate(() -> new NeuronPerceptron(inputs))
                 .limit(16)
