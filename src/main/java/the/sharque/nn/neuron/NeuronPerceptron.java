@@ -11,6 +11,7 @@ import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import lombok.Getter;
+import lombok.Setter;
 import the.sharque.nn.utils.Utils;
 
 public class NeuronPerceptron implements Neuron {
@@ -21,11 +22,14 @@ public class NeuronPerceptron implements Neuron {
     private double learnedBias;
     @Getter
     private final double[] learned;
-
-    private final Neuron[] inputs;
-    private final double[] weights;
+    @Getter
+    @Setter
+    private double[] weights;
+    @Setter
     private double bias;
+
     private boolean calculated;
+    private final Neuron[] inputs;
 
     public NeuronPerceptron(Neuron[]... inputs) {
         this.inputs = Arrays.stream(inputs).flatMap(Stream::of).toArray(Neuron[]::new);
@@ -40,7 +44,8 @@ public class NeuronPerceptron implements Neuron {
     public String toString() {
         return String.format("{P: %2.4f (W: [%s]) {I: [%s]}",
                 result,
-                Arrays.stream(weights).mapToObj(value -> String.format("%.2f", value)).collect(Collectors.joining(", ")),
+                Arrays.stream(weights).mapToObj(value -> String.format("%.2f", value))
+                        .collect(Collectors.joining(", ")),
                 Arrays.stream(inputs).map(Object::toString).collect(Collectors.joining(", ")));
     }
 
@@ -76,25 +81,16 @@ public class NeuronPerceptron implements Neuron {
             learnedBias += 1;
 
             double requiredValue = diff / inputs.length;
-            IntStream.range(0, inputs.length).sequential()
+            IntStream.range(0, inputs.length).parallel()
                     .filter(i -> isApplicable())
                     .forEach(i -> {
-                        System.out.printf("B %d R:%+.2f W:%+.2f I:%+.2f C:%+.2f\n", i, requiredValue, weights[i], inputs[i].getResult(), weights[i] * inputs[i].getResult());
+//                        System.out.printf("B %d R:%+.2f W:%+.2f I:%+.2f C:%+.2f\n", i, requiredValue, weights[i],
+//                                inputs[i].getResult(), weights[i] * inputs[i].getResult());
 
-                        //   R   W   I   C    nW
-                        // +10  +3  +2  +6 -> +2
-                        // +10  -3  +2  -6 -> +8
-                        // -10  +3  +2  +6 -> -8
-                        // -10  -3  +2  -6 -> -2
+                        weights[i] += ((requiredValue / inputs[i].getResult() + EPSILON) - weights[i]) * learnRate;
 
-                        // +10  +3  -2  -6 -> -8
-                        // +10  -3  -2  +6 -> -2
-                        // -10  +3  -2  -6 -> +2
-                        // -10  -3  -2  +6 -> +8
-
-                        weights[i] += (requiredValue - inputs[i].getResult() * weights[i]) * (1 / (EPSILON + inputs[i].getResult())) * learnRate;
-
-                        System.out.printf("A %d R:%+.2f W:%+.2f I:%+.2f C:%+.2f\n", i, requiredValue, weights[i], inputs[i].getResult(), weights[i] * inputs[i].getResult());
+//                        System.out.printf("A %d R:%+.2f W:%+.2f I:%+.2f C:%+.2f\n", i, requiredValue, weights[i],
+//                                inputs[i].getResult(), weights[i] * inputs[i].getResult());
 
                         weights[i] = limitValue(weights[i]);
                         learned[i] += 1;

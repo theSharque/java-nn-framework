@@ -27,7 +27,7 @@ public class Main {
         List<List<String>> dataset = readData(datasetFile);
         Collections.shuffle(dataset);
 
-        int length = 5;
+//        int length = 5;
 
 //        double[][] train = dataset.stream().limit(length)
 //                .map(line -> line.stream()
@@ -65,7 +65,7 @@ public class Main {
 
         double learned;
         do {
-            learned = model.learn(train, train_result, 0.001);
+            learned = model.learn(train, train_result, 0.1);
             double check = model.predict(test, test_result);
             System.out.printf("Train %f, Test %f\n", learned, check);
         } while (learned < 1);
