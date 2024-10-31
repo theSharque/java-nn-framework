@@ -4,7 +4,7 @@ public class Utils {
 
     public static final double MAD_LIMIT = 1e6;
     public static final double EPSILON = 1e-6;
-    public static final double DROPOUT = 1.0;
+    public static final double DROPOUT = 0.7;
 
     public static double getRandomValue() {
         return Math.random() * 2 - 1;

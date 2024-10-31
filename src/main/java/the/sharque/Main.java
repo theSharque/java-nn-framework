@@ -27,47 +27,46 @@ public class Main {
         List<List<String>> dataset = readData(datasetFile);
         Collections.shuffle(dataset);
 
-//        int length = 5;
+        int length = 13;
 
-//        double[][] train = dataset.stream().limit(length)
-//                .map(line -> line.stream()
-//                        .limit(7)
-//                        .mapToDouble(Double::parseDouble)
-//                        .toArray()).toArray(double[][]::new);
-//
-//        double[][] train_result = dataset.stream().limit(length)
-//                .map(line -> line.stream()
-//                        .skip(7)
-//                        .limit(1)
-//                        .mapToDouble(Double::parseDouble)
-//                        .map(operand -> operand - 1)
-//                        .toArray()).toArray(double[][]::new);
-//
-//        double[][] test = dataset.stream().skip(length)
-//                .map(line -> line.stream()
-//                        .limit(7)
-//                        .mapToDouble(Double::parseDouble)
-//                        .toArray()).toArray(double[][]::new);
-//
-//        double[][] test_result = dataset.stream().skip(length)
-//                .map(line -> line.stream()
-//                        .skip(7)
-//                        .limit(1)
-//                        .mapToDouble(Double::parseDouble)
-//                        .map(operand -> operand - 1)
-//                        .toArray()).toArray(double[][]::new);
+        double[][] train = dataset.stream().limit(length)
+                .map(line -> line.stream()
+                        .limit(7)
+                        .mapToDouble(Double::parseDouble)
+                        .toArray()).toArray(double[][]::new);
 
-        double[][] train = new double[][]{{11.75, 13.52, 0.8082, 5.444, 2.678, 4.378, 5.31}};
-        double[][] train_result = new double[][]{{2}};
+        double[][] train_result = dataset.stream().limit(length)
+                .map(line -> line.stream()
+                        .skip(7)
+                        .limit(1)
+                        .mapToDouble(Double::parseDouble)
+                        .map(operand -> operand - 1)
+                        .toArray()).toArray(double[][]::new);
 
-        double[][] test = new double[][]{{11.75, 13.52, 0.8082, 5.444, 2.678, 4.378, 5.31}};
-        double[][] test_result = new double[][]{{2}};
+        double[][] test = dataset.stream().skip(length)
+                .map(line -> line.stream()
+                        .limit(7)
+                        .mapToDouble(Double::parseDouble)
+                        .toArray()).toArray(double[][]::new);
+
+        double[][] test_result = dataset.stream().skip(length)
+                .map(line -> line.stream()
+                        .skip(7)
+                        .limit(1)
+                        .mapToDouble(Double::parseDouble)
+                        .map(operand -> operand - 1)
+                        .toArray()).toArray(double[][]::new);
 
         double learned;
+        String oldLog = null;
         do {
-            learned = model.learn(train, train_result, 0.1);
+            learned = model.learn(train, train_result, 0.01);
             double check = model.predict(test, test_result);
-            System.out.printf("Train %f, Test %f\n", learned, check);
+            String log = String.format("Train %f, Test %f", learned, check);
+            if (!log.equals(oldLog)) {
+                System.out.println(log);
+                oldLog = log;
+            }
         } while (learned < 1);
     }
 
@@ -77,22 +76,22 @@ public class Main {
                 .toArray(NeuronInput[]::new);
 
         Neuron[] class1 = Stream.generate(() -> new NeuronPerceptron(inputs))
-                .limit(1)
+                .limit(16)
                 .toArray(Neuron[]::new);
 
         Neuron[] class2 = Stream.generate(() -> new NeuronPerceptron(inputs))
-                .limit(1)
+                .limit(16)
                 .toArray(Neuron[]::new);
 
         Neuron[] class3 = Stream.generate(() -> new NeuronPerceptron(inputs))
-                .limit(1)
+                .limit(16)
                 .toArray(Neuron[]::new);
 
-//        Neuron[] layer2 = Stream.generate(() -> new NeuronPerceptron(class1, class2, class3))
-//                .limit(3)
-//                .toArray(Neuron[]::new);
+        Neuron[] layer2 = Stream.generate(() -> new NeuronPerceptron(class1, class2, class3))
+                .limit(3)
+                .toArray(Neuron[]::new);
 
-        Neuron[] output = new Neuron[]{new NeuronClassification(class1, class2, class3)};
+        Neuron[] output = new Neuron[]{new NeuronClassification(layer2)};
 
         return new Model(inputs, output);
     }

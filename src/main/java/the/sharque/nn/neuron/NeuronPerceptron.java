@@ -81,24 +81,16 @@ public class NeuronPerceptron implements Neuron {
             learnedBias += 1;
 
             double requiredChanges = diff / inputs.length;
-            IntStream.range(0, inputs.length).sequential()
+            IntStream.range(0, inputs.length).parallel()
                     .filter(i -> isApplicable())
                     .forEach(i -> {
                         double requiredValue = requiredChanges + inputs[i].getResult() * weights[i];
-//                        System.out.printf("B %d R:%+.2f W:%+.2f I:%+.2f C:%+.2f\n", i, requiredValue, weights[i],
-//                                inputs[i].getResult(), weights[i] * inputs[i].getResult());
-
                         weights[i] += ((requiredValue / (inputs[i].getResult() + EPSILON)) - weights[i]) * learnRate;
-
-//                        System.out.printf("A %d R:%+.2f W:%+.2f I:%+.2f C:%+.2f\n", i, requiredValue, weights[i],
-//                                inputs[i].getResult(), weights[i] * inputs[i].getResult());
-
                         weights[i] = limitValue(weights[i]);
                         learned[i] += 1;
 
                         inputs[i].learn(learnRate, requiredChanges);
                     });
-            System.out.print("\n");
         }
     }
 }

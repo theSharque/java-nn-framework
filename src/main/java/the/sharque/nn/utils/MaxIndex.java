@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 public class MaxIndex {
 
     private int index = 0;
-    private double value = 0;
+    private double value = Double.MIN_VALUE;
 
     public void update(int index, double value) {
         if (value > this.value) {
