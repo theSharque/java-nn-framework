@@ -5,7 +5,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import lombok.Getter;
-import the.sharque.nn.utils.MaxIndex;
 
 public class NeuronClassification implements Neuron {
 
@@ -32,10 +31,10 @@ public class NeuronClassification implements Neuron {
         if (!calculated) {
             Arrays.stream(inputs).parallel().forEach(Neuron::predict);
 
-            MaxIndex maxIndex = new MaxIndex();
-            IntStream.range(0, inputs.length).sequential().forEach(i -> maxIndex.update(i, inputs[i].getResult()));
+            result = IntStream.range(0, inputs.length).parallel()
+                    .reduce((left, right) -> inputs[left].getResult() > inputs[right].getResult() ? left : right)
+                    .orElse(0);
 
-            result = maxIndex.getIndex();
             calculated = true;
         }
     }

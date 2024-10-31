@@ -87,19 +87,11 @@ public class Model {
                     .anyMatch(j -> resultLine[j] != output[j].getResult());
 
             if (required) {
-//                System.out.printf("Required: %1.0f, Have: %1.0f\n", resultLine[0], output[0].getResult());
-//                IntStream.range(0, resultLine.length).parallel().forEach(j -> output[j].predict());
-//                System.out.printf("Model before\n%s\n", getOutput()[0]);
                 IntStream.range(0, resultLine.length).parallel().forEach(j -> output[j].learn(lr, resultLine[j]));
-//                reset();
-//                IntStream.range(0, resultLine.length).parallel().forEach(j -> output[j].predict());
-//                System.out.printf("Model after\n%s\n", getOutput()[0]);
-//                System.out.println("-----------");
             } else {
                 learned += 1;
             }
         }
-//        System.out.println("-----------");
 
         return learned / data.length;
     }

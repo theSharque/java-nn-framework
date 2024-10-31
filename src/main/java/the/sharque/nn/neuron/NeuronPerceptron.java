@@ -74,7 +74,7 @@ public class NeuronPerceptron implements Neuron {
     public void learn(double learnRate, double value) {
         predict();
 
-        if (result != value && isApplicable()) {
+        if (result != value) {
             double diff = (value - result);
             bias += diff * learnRate;
             bias = limitValue(bias);

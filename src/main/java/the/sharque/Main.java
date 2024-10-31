@@ -3,6 +3,8 @@ package the.sharque;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -10,7 +12,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import the.sharque.nn.model.Model;
-import the.sharque.nn.neuron.InputRaw;
+import the.sharque.nn.neuron.InputFlex;
 import the.sharque.nn.neuron.Neuron;
 import the.sharque.nn.neuron.NeuronClassification;
 import the.sharque.nn.neuron.NeuronInput;
@@ -27,7 +29,7 @@ public class Main {
         List<List<String>> dataset = readData(datasetFile);
         Collections.shuffle(dataset);
 
-        int length = 13;
+        int length = 30;
 
         double[][] train = dataset.stream().limit(length)
                 .map(line -> line.stream()
@@ -58,36 +60,28 @@ public class Main {
                         .toArray()).toArray(double[][]::new);
 
         double learned;
-        String oldLog = null;
+        double oldLearned = 0;
         do {
-            learned = model.learn(train, train_result, 0.01);
+            learned = model.learn(train, train_result, 0.0001);
             double check = model.predict(test, test_result);
-            String log = String.format("Train %f, Test %f", learned, check);
-            if (!log.equals(oldLog)) {
-                System.out.println(log);
-                oldLog = log;
+            if (learned > oldLearned) {
+                System.out.printf("%s Train %f, Test %f\n",
+                        LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")), learned, check);
+                oldLearned = learned;
             }
         } while (learned < 1);
     }
 
     private static Model buildModel() {
-        NeuronInput[] inputs = Stream.generate(InputRaw::new)
+        NeuronInput[] inputs = Stream.generate(InputFlex::new)
                 .limit(7)
                 .toArray(NeuronInput[]::new);
 
-        Neuron[] class1 = Stream.generate(() -> new NeuronPerceptron(inputs))
+        Neuron[] layer1 = Stream.generate(() -> new NeuronPerceptron(inputs))
                 .limit(16)
                 .toArray(Neuron[]::new);
 
-        Neuron[] class2 = Stream.generate(() -> new NeuronPerceptron(inputs))
-                .limit(16)
-                .toArray(Neuron[]::new);
-
-        Neuron[] class3 = Stream.generate(() -> new NeuronPerceptron(inputs))
-                .limit(16)
-                .toArray(Neuron[]::new);
-
-        Neuron[] layer2 = Stream.generate(() -> new NeuronPerceptron(class1, class2, class3))
+        Neuron[] layer2 = Stream.generate(() -> new NeuronPerceptron(layer1))
                 .limit(3)
                 .toArray(Neuron[]::new);
 
