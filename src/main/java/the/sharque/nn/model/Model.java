@@ -1,10 +1,11 @@
 package the.sharque.nn.model;
 
 import java.util.Arrays;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.Getter;
-import the.sharque.nn.neuron.Neuron;
 import the.sharque.nn.neuron.InputNeuron;
+import the.sharque.nn.neuron.Neuron;
 
 public class Model {
 
@@ -82,5 +83,11 @@ public class Model {
 
     public void resetLearned() {
         Arrays.stream(output).parallel().forEach(Neuron::resetLearned);
+    }
+
+    public void showLearning() {
+        System.out.println(Arrays.stream(output)
+                .map(neuron -> neuron.getLearning("\t"))
+                .collect(Collectors.joining("")));
     }
 }

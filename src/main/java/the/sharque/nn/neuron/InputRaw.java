@@ -16,4 +16,9 @@ public class InputRaw implements InputNeuron {
     public double getResult() {
         return data;
     }
+
+    @Override
+    public String getLearning(String prefix) {
+        return "";
+    }
 }

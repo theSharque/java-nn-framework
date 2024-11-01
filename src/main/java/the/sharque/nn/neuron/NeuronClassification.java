@@ -13,6 +13,7 @@ public class NeuronClassification implements Neuron {
 
     private final Neuron[] inputs;
     private boolean calculated;
+    private final Object lock = new Object();
 
     public NeuronClassification(Neuron[]... inputs) {
         this.inputs = Arrays.stream(inputs).parallel().flatMap(Stream::of).toArray(Neuron[]::new);
@@ -29,20 +30,24 @@ public class NeuronClassification implements Neuron {
     @Override
     public void predict() {
         if (!calculated) {
-            Arrays.stream(inputs).parallel().forEach(Neuron::predict);
+            synchronized (lock) {
+                Arrays.stream(inputs).parallel().forEach(Neuron::predict);
 
-            result = IntStream.range(0, inputs.length).parallel()
-                    .reduce((left, right) -> inputs[left].getResult() > inputs[right].getResult() ? left : right)
-                    .orElse(0);
+                result = IntStream.range(0, inputs.length).parallel()
+                        .reduce((left, right) -> inputs[left].getResult() > inputs[right].getResult() ? left : right)
+                        .orElse(0);
 
-            calculated = true;
+                calculated = true;
+            }
         }
     }
 
     @Override
     public void reset() {
-        Arrays.stream(inputs).parallel().forEach(Neuron::reset);
-        calculated = false;
+        synchronized (lock) {
+            Arrays.stream(inputs).parallel().forEach(Neuron::reset);
+            calculated = false;
+        }
     }
 
     @Override
@@ -50,13 +55,22 @@ public class NeuronClassification implements Neuron {
         predict();
 
         if (result != value) {
-            inputs[(int) value].learn(learnRate, inputs[(int) value].getResult() + 1);
-            inputs[(int) result].learn(learnRate, inputs[(int) result].getResult() - 1);
+            synchronized (lock) {
+                inputs[(int) value].learn(learnRate, inputs[(int) value].getResult() + 1);
+                inputs[(int) result].learn(learnRate, inputs[(int) result].getResult() - 1);
+            }
         }
     }
 
     @Override
     public void resetLearned() {
         Arrays.stream(inputs).parallel().forEach(Neuron::resetLearned);
+    }
+
+    @Override
+    public String getLearning(String prefix) {
+        return Arrays.stream(inputs)
+                .map(neuron -> neuron.getLearning(prefix))
+                .collect(Collectors.joining(""));
     }
 }

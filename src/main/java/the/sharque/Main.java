@@ -29,7 +29,7 @@ public class Main {
         List<List<String>> dataset = readData(datasetFile);
         Collections.shuffle(dataset);
 
-        int length = 200;
+        int length = 105;
 
         double[][] train = dataset.stream().limit(length)
                 .map(line -> line.stream()
@@ -61,9 +61,16 @@ public class Main {
 
         double learned;
         double oldLearned = 0;
+        int step = 0;
         do {
             learned = model.learn(train, train_result, 0.001);
             model.reset();
+            if(step % 100 == 0) {
+                System.out.println(LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")) + " Step: " + step);
+                model.showLearning();
+            }
+            step++;
+            model.resetLearned();
             double check = model.predict(test, test_result);
 
             if (learned > oldLearned) {
@@ -80,14 +87,14 @@ public class Main {
                 .toArray(InputNeuron[]::new);
 
         Neuron[] layer1 = Stream.generate(() -> new NeuronPerceptron(inputs))
-                .limit(16)
-                .toArray(Neuron[]::new);
-
-        Neuron[] layer2 = Stream.generate(() -> new NeuronPerceptron(layer1))
                 .limit(3)
                 .toArray(Neuron[]::new);
 
-        Neuron[] output = new Neuron[]{new NeuronClassification(layer2)};
+        Neuron[] layer3 = Stream.generate(() -> new NeuronPerceptron(layer1))
+                .limit(3)
+                .toArray(Neuron[]::new);
+
+        Neuron[] output = new Neuron[]{new NeuronClassification(layer3)};
 
         return new Model(inputs, output);
     }

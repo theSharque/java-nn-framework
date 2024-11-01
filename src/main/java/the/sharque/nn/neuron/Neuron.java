@@ -1,6 +1,8 @@
 package the.sharque.nn.neuron;
 
-public interface Neuron {
+import java.io.Serializable;
+
+public interface Neuron extends Serializable {
 
     double getResult();
 
@@ -15,4 +17,6 @@ public interface Neuron {
 
     default void resetLearned() {
     }
+
+    String getLearning(String prefix);
 }
