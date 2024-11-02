@@ -12,8 +12,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import the.sharque.nn.model.Model;
-import the.sharque.nn.neuron.InputFlex;
 import the.sharque.nn.neuron.InputNeuron;
+import the.sharque.nn.neuron.InputRaw;
 import the.sharque.nn.neuron.Neuron;
 import the.sharque.nn.neuron.NeuronClassification;
 import the.sharque.nn.neuron.NeuronPerceptron;
@@ -65,15 +65,16 @@ public class Main {
         do {
             learned = model.learn(train, train_result, 0.001);
             model.reset();
-            if(step % 100 == 0) {
-                System.out.println(LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")) + " Step: " + step);
+            if (step % 100 == 0) {
+                System.out.println(
+                        LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")) + " Step: " + step);
                 model.showLearning();
+                model.resetLearned();
             }
             step++;
-            model.resetLearned();
             double check = model.predict(test, test_result);
 
-            if (learned > oldLearned) {
+            if (learned > oldLearned || step % 100 == 0) {
                 System.out.printf("%s Train %f, Test %f\n",
                         LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")), learned, check);
                 oldLearned = learned;
@@ -82,19 +83,19 @@ public class Main {
     }
 
     private static Model buildModel() {
-        InputNeuron[] inputs = Stream.generate(InputFlex::new)
+        InputNeuron[] inputs = Stream.generate(InputRaw::new)
                 .limit(7)
                 .toArray(InputNeuron[]::new);
 
         Neuron[] layer1 = Stream.generate(() -> new NeuronPerceptron(inputs))
+                .limit(7)
+                .toArray(Neuron[]::new);
+
+        Neuron[] layer2 = Stream.generate(() -> new NeuronPerceptron(layer1))
                 .limit(3)
                 .toArray(Neuron[]::new);
 
-        Neuron[] layer3 = Stream.generate(() -> new NeuronPerceptron(layer1))
-                .limit(3)
-                .toArray(Neuron[]::new);
-
-        Neuron[] output = new Neuron[]{new NeuronClassification(layer3)};
+        Neuron[] output = new Neuron[]{new NeuronClassification(layer2)};
 
         return new Model(inputs, output);
     }

@@ -34,7 +34,7 @@ public class NeuronClassification implements Neuron {
                 Arrays.stream(inputs).parallel().forEach(Neuron::predict);
 
                 result = IntStream.range(0, inputs.length).parallel()
-                        .reduce((left, right) -> inputs[left].getResult() > inputs[right].getResult() ? left : right)
+                        .reduce((l, r) -> inputs[l].getResult() > inputs[r].getResult() ? l : r)
                         .orElse(0);
 
                 calculated = true;

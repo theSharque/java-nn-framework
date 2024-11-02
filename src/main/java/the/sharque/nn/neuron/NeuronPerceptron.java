@@ -79,28 +79,27 @@ public class NeuronPerceptron implements Neuron {
         predict();
 
         if (result != value) {
-            double diff = (value - result);
+            double diff = (value - result) / inputs.length;
             synchronized (lock) {
                 if (isApplicable()) {
+                    learnedBias += 1;
                     bias += diff * learnRate;
                     bias = limitValue(bias);
                 }
-                learnedBias += bias - diff * learnRate;
 
-                double requiredChanges = diff / inputs.length;
                 IntStream.range(0, inputs.length).parallel()
-                        .filter(i -> inputs[i].getResult() * weights[i] != requiredChanges)
-                        .forEach(i -> {
-                            double requiredValue = requiredChanges + inputs[i].getResult() * weights[i];
-                            learned[i] += weights[i] -
-                                    ((requiredValue / (inputs[i].getResult() + EPSILON)) - weights[i]) * learnRate;
-
+                        .reduce((l, r) -> (diff - inputs[l].getResult() * weights[l]) * 2
+                                > (diff - inputs[r].getResult() * weights[r]) * 2 ? l : r)
+                        .ifPresent(i -> {
+                            double requiredValue = diff + inputs[i].getResult() * weights[i];
                             if (isApplicable()) {
+                                learned[i] += 1;
+
                                 weights[i] +=
                                         ((requiredValue / (inputs[i].getResult() + EPSILON)) - weights[i]) * learnRate;
                                 weights[i] = limitValue(weights[i]);
 
-                                inputs[i].learn(learnRate, requiredChanges);
+                                inputs[i].learn(learnRate, diff);
                             }
                         });
             }
@@ -119,21 +118,19 @@ public class NeuronPerceptron implements Neuron {
         String inData = Arrays.stream(inputs).map(in -> in.getLearning(prefix + "\t"))
                 .collect(Collectors.joining(""));
         if (inData.isEmpty()) {
-            return String.format("\n%sBD:%7.2f BL:%7.2f L:{ %s }",
+            return String.format("\n%sBL:%7.2f L:{ %s }",
                     prefix,
-                    bias,
                     learnedBias,
                     IntStream.range(0, inputs.length)
-                            .mapToObj(i -> String.format("\n%s\tWD:%7.2f WL:%7.2f", prefix, weights[i], learned[i]))
-                            .collect(Collectors.joining("")));
+                            .mapToObj(i -> String.format("WL:%7.2f", learned[i]))
+                            .collect(Collectors.joining(" | ")));
         } else {
-            return String.format("\n%sBD:%7.2f BL:%7.2f L:{ %s }\n%sI:{%s}",
+            return String.format("\n%sBL:%7.2f L:{ %s }\n%sI:{%s}",
                     prefix,
-                    bias,
                     learnedBias,
                     IntStream.range(0, inputs.length)
-                            .mapToObj(i -> String.format("WD:%7.2f WL:%7.2f", weights[i], learned[i]))
-                            .collect(Collectors.joining(", ")),
+                            .mapToObj(i -> String.format("WL:%7.2f", learned[i]))
+                            .collect(Collectors.joining(" | ")),
                     prefix,
                     inData);
         }
