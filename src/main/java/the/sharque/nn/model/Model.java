@@ -90,4 +90,8 @@ public class Model {
                 .map(neuron -> neuron.getLearning("\t"))
                 .collect(Collectors.joining("")));
     }
+
+    public void shock() {
+        Arrays.stream(output).parallel().forEach(Neuron::shock);
+    }
 }

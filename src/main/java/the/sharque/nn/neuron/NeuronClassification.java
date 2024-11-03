@@ -73,4 +73,11 @@ public class NeuronClassification implements Neuron {
                 .map(neuron -> neuron.getLearning(prefix))
                 .collect(Collectors.joining(""));
     }
+
+    @Override
+    public void shock() {
+        synchronized (lock) {
+            Arrays.stream(inputs).parallel().forEach(Neuron::shock);
+        }
+    }
 }

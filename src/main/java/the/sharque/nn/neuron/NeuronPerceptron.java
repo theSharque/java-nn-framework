@@ -21,17 +21,19 @@ public class NeuronPerceptron implements Neuron {
     @Getter
     private double learnedBias;
     @Getter
-    private final double[] learned;
+    private double[] learned;
     @Getter
-    private final double[] weights;
+    private double[] weights;
     @Setter
     private double bias;
     private final Object lock = new Object();
 
     private boolean calculated;
-    private final Neuron[] inputs;
+    private Neuron[] inputs;
+    private final boolean splittable;
 
-    public NeuronPerceptron(Neuron[]... inputs) {
+    public NeuronPerceptron(boolean splittable, Neuron[]... inputs) {
+        this.splittable = splittable;
         this.inputs = Arrays.stream(inputs).parallel().flatMap(Stream::of).toArray(Neuron[]::new);
         weights = DoubleStream.generate(Utils::getRandomValue).limit(this.inputs.length).toArray();
         learned = DoubleStream.generate(() -> 0).limit(this.inputs.length).toArray();
@@ -134,5 +136,40 @@ public class NeuronPerceptron implements Neuron {
                     prefix,
                     inData);
         }
+    }
+
+    @Override
+    public void shock() {
+        synchronized (lock) {
+            double biggest = Arrays.stream(learned).parallel().sum();
+            IntStream.range(0, learned.length).parallel()
+                    .filter(i -> learned[i] > 0)
+                    .filter(i -> learned[i] == biggest).findFirst()
+                    .ifPresent(key -> {
+                        learned = new double[learned.length + 1];
+
+                        Neuron[] newInputs = new Neuron[inputs.length + 1];
+                        double[] newWeights = new double[weights.length + 1];
+
+                        IntStream.range(0, inputs.length).parallel().forEach(i -> {
+                            newInputs[i] = inputs[i];
+                            newWeights[i] = weights[i];
+                        });
+
+                        newInputs[inputs.length] = inputs[key];
+                        newWeights[weights.length] = getRandomValue();
+                        weights[key] = getRandomValue();
+
+                        inputs = newInputs;
+                        weights = newWeights;
+                    });
+        }
+
+        Arrays.stream(inputs).parallel().forEach(Neuron::shock);
+    }
+
+    @Override
+    public boolean isSplittable() {
+        return splittable;
     }
 }

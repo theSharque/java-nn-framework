@@ -6,6 +6,12 @@ public interface Neuron extends Serializable {
 
     double getResult();
 
+    String getLearning(String prefix);
+
+    default boolean isSplittable() {
+        return false;
+    }
+
     default void predict() {
     }
 
@@ -18,5 +24,6 @@ public interface Neuron extends Serializable {
     default void resetLearned() {
     }
 
-    String getLearning(String prefix);
+    default void shock() {
+    }
 }
