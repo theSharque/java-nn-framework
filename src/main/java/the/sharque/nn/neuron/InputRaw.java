@@ -1,5 +1,7 @@
 package the.sharque.nn.neuron;
 
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import lombok.Setter;
 
 @Setter
@@ -7,6 +9,7 @@ public class InputRaw implements InputNeuron {
 
     private double data;
     private boolean showed;
+    private final Lock lock = new ReentrantLock();
 
     @Override
     public String toString() {
@@ -15,17 +18,27 @@ public class InputRaw implements InputNeuron {
 
     @Override
     public double getResult() {
-        showed = false;
-        return data;
+        lock.lock();
+        try {
+            showed = false;
+            return data;
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override
     public String getLearning(String prefix) {
-        if (showed) {
-            return "";
-        } else {
-            showed = true;
-            return "0";
+        lock.lock();
+        try {
+            if (showed) {
+                return "";
+            } else {
+                showed = true;
+                return "0";
+            }
+        } finally {
+            lock.unlock();
         }
     }
 

@@ -6,6 +6,8 @@ import static the.sharque.nn.utils.Utils.getRandomValue;
 import static the.sharque.nn.utils.Utils.isApplicable;
 
 import java.util.Arrays;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
@@ -26,7 +28,7 @@ public class NeuronPerceptron implements Neuron {
     private double[] weights;
     @Setter
     private double bias;
-    private final Object lock = new Object();
+    private final Lock lock = new ReentrantLock();
 
     private boolean calculated;
     private Neuron[] inputs;
@@ -35,7 +37,7 @@ public class NeuronPerceptron implements Neuron {
 
     public NeuronPerceptron(boolean splittable, Neuron[]... inputs) {
         this.splittable = splittable;
-        this.inputs = Arrays.stream(inputs).parallel().flatMap(Stream::of).toArray(Neuron[]::new);
+        this.inputs = Arrays.stream(inputs).flatMap(Stream::of).toArray(Neuron[]::new);
         weights = DoubleStream.generate(Utils::getRandomValue).limit(this.inputs.length).toArray();
         learned = DoubleStream.generate(() -> 0).limit(this.inputs.length).toArray();
 
@@ -54,9 +56,10 @@ public class NeuronPerceptron implements Neuron {
 
     @Override
     public void predict() {
-        if (!calculated) {
-            synchronized (lock) {
-                result = bias + IntStream.range(0, inputs.length).parallel()
+        lock.lock();
+        try {
+            if (!calculated) {
+                result = bias + IntStream.range(0, inputs.length).unordered()
                         .mapToDouble(i -> {
                             inputs[i].predict();
                             return inputs[i].getResult() * weights[i];
@@ -66,60 +69,62 @@ public class NeuronPerceptron implements Neuron {
 
                 calculated = true;
             }
+        } finally {
+            lock.unlock();
         }
     }
 
     @Override
     public void reset() {
-        synchronized (lock) {
-            IntStream.range(0, inputs.length).parallel().forEach(i -> inputs[i].reset());
+        lock.lock();
+        if (calculated) {
+            IntStream.range(0, inputs.length).forEach(i -> inputs[i].reset());
             calculated = false;
         }
+        lock.unlock();
     }
 
     @Override
     public void learn(double learnRate, double value) {
+        lock.lock();
         predict();
 
         if (result != value) {
             double diff = (value - result) / inputs.length;
-            synchronized (lock) {
-                IntStream.range(0, inputs.length).parallel()
-                        .forEach(i -> {
-                            double requiredValue = diff + inputs[i].getResult() * weights[i];
-                            if (isApplicable()) {
-                                learned[i] += 1;
+            IntStream.range(0, inputs.length).unordered()
+                    .forEach(i -> {
+                        double requiredValue = diff + inputs[i].getResult() * weights[i];
+                        if (isApplicable()) {
+                            learned[i] += 1;
 
-                                weights[i] +=
-                                        ((requiredValue / (inputs[i].getResult() + EPSILON)) - weights[i]) * learnRate;
-                                if (weights[i] > MAD_LIMIT || weights[i] < -MAD_LIMIT) {
-                                    System.out.println("Reset perceptron weight");
-                                    resetWeights();
-                                }
-
-                                inputs[i].learn(learnRate, diff);
+                            weights[i] +=
+                                    ((requiredValue / (inputs[i].getResult() + EPSILON)) - weights[i]) * learnRate;
+                            if (weights[i] > MAD_LIMIT || weights[i] < -MAD_LIMIT) {
+                                resetWeights();
                             }
-                        });
-                if (isApplicable()) {
-                    learnedBias += 1;
-                    bias += diff * learnRate;
-                    if (bias > MAD_LIMIT || bias < -MAD_LIMIT) {
-                        System.out.println("Reset perceptron bias");
-                        resetWeights();
-                    }
+
+                            inputs[i].learn(learnRate, diff);
+                        }
+                    });
+            if (isApplicable()) {
+                learnedBias += 1;
+                bias += diff * learnRate;
+                if (bias > MAD_LIMIT || bias < -MAD_LIMIT) {
+                    resetWeights();
                 }
             }
         }
+        lock.unlock();
     }
 
     @Override
     public void resetLearned() {
-        synchronized (lock) {
-            showed = false;
-            learnedBias = 0;
-            Arrays.parallelSetAll(learned, value -> 0);
-            Arrays.stream(inputs).parallel().forEach(Neuron::resetLearned);
-        }
+        lock.lock();
+        showed = false;
+        learnedBias = 0;
+        Arrays.parallelSetAll(learned, value -> 0);
+        Arrays.stream(inputs).forEach(Neuron::resetLearned);
+        lock.unlock();
     }
 
     @Override
@@ -154,32 +159,31 @@ public class NeuronPerceptron implements Neuron {
 
     @Override
     public void shock() {
-        synchronized (lock) {
-            double biggest = Arrays.stream(learned).parallel().sum();
-            IntStream.range(0, learned.length).parallel()
-                    .filter(i -> learned[i] > 0)
-                    .filter(i -> learned[i] == biggest).findFirst()
-                    .ifPresent(key -> {
-                        learned = new double[learned.length + 1];
+        lock.lock();
+        double biggest = Arrays.stream(learned).sum();
+        IntStream.range(0, learned.length)
+                .filter(i -> learned[i] > 0)
+                .filter(i -> learned[i] == biggest).findFirst()
+                .ifPresent(key -> {
+                    learned = new double[learned.length + 1];
 
-                        Neuron[] newInputs = new Neuron[inputs.length + 1];
-                        double[] newWeights = new double[weights.length + 1];
+                    Neuron[] newInputs = new Neuron[inputs.length + 1];
+                    double[] newWeights = new double[weights.length + 1];
 
-                        IntStream.range(0, inputs.length).parallel().forEach(i -> {
-                            newInputs[i] = inputs[i];
-                            newWeights[i] = weights[i];
-                        });
-
-                        newInputs[inputs.length] = inputs[key];
-                        newWeights[weights.length] = getRandomValue();
-                        weights[key] = getRandomValue();
-
-                        inputs = newInputs;
-                        weights = newWeights;
+                    IntStream.range(0, inputs.length).forEach(i -> {
+                        newInputs[i] = inputs[i];
+                        newWeights[i] = weights[i];
                     });
-        }
 
-        Arrays.stream(inputs).parallel().forEach(Neuron::shock);
+                    newInputs[inputs.length] = inputs[key];
+                    newWeights[weights.length] = getRandomValue();
+                    weights[key] = getRandomValue();
+
+                    inputs = newInputs;
+                    weights = newWeights;
+                });
+        Arrays.stream(inputs).forEach(Neuron::shock);
+        lock.unlock();
     }
 
     @Override

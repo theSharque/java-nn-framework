@@ -1,6 +1,8 @@
 package the.sharque.nn.neuron;
 
 import java.util.Arrays;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -13,11 +15,11 @@ public class NeuronClassification implements Neuron {
 
     private final Neuron[] inputs;
     private boolean calculated;
-    private final Object lock = new Object();
+    private final Lock lock = new ReentrantLock();
     private boolean showed = false;
 
     public NeuronClassification(Neuron[]... inputs) {
-        this.inputs = Arrays.stream(inputs).parallel().flatMap(Stream::of).toArray(Neuron[]::new);
+        this.inputs = Arrays.stream(inputs).flatMap(Stream::of).toArray(Neuron[]::new);
         calculated = false;
     }
 
@@ -30,43 +32,48 @@ public class NeuronClassification implements Neuron {
 
     @Override
     public void predict() {
-        if (!calculated) {
-            synchronized (lock) {
-                Arrays.stream(inputs).parallel().forEach(Neuron::predict);
+        lock.lock();
+        try {
+            if (!calculated) {
+                Arrays.stream(inputs).unordered().forEach(Neuron::predict);
 
-                result = IntStream.range(0, inputs.length).parallel()
+                result = IntStream.range(0, inputs.length).unordered()
                         .reduce((l, r) -> inputs[l].getResult() > inputs[r].getResult() ? l : r)
                         .orElse(0);
 
                 calculated = true;
             }
+        } finally {
+            lock.unlock();
         }
     }
 
     @Override
     public void reset() {
-        synchronized (lock) {
-            Arrays.stream(inputs).parallel().forEach(Neuron::reset);
+        lock.lock();
+        if (calculated) {
+            Arrays.stream(inputs).forEach(Neuron::reset);
             calculated = false;
         }
+        lock.unlock();
     }
 
     @Override
     public void learn(double learnRate, double value) {
+        lock.lock();
         predict();
 
         if (result != value) {
-            synchronized (lock) {
-                inputs[(int) value].learn(learnRate, inputs[(int) value].getResult() + 1);
-                inputs[(int) result].learn(learnRate, inputs[(int) result].getResult() - 1);
-            }
+            inputs[(int) value].learn(learnRate, inputs[(int) value].getResult() + 1);
+            inputs[(int) result].learn(learnRate, inputs[(int) result].getResult() - 1);
         }
+        lock.unlock();
     }
 
     @Override
     public void resetLearned() {
         showed = false;
-        Arrays.stream(inputs).parallel().forEach(Neuron::resetLearned);
+        Arrays.stream(inputs).forEach(Neuron::resetLearned);
     }
 
     @Override
@@ -83,16 +90,16 @@ public class NeuronClassification implements Neuron {
 
     @Override
     public void shock() {
-        synchronized (lock) {
-            Arrays.stream(inputs).parallel().forEach(Neuron::shock);
-        }
+        lock.lock();
+        Arrays.stream(inputs).forEach(Neuron::shock);
+        lock.unlock();
     }
 
     @Override
     public void resetWeights() {
-        synchronized (lock) {
-            this.calculated = false;
-            Arrays.stream(inputs).parallel().forEach(Neuron::resetWeights);
-        }
+        lock.lock();
+        this.calculated = false;
+        Arrays.stream(inputs).forEach(Neuron::resetWeights);
+        lock.unlock();
     }
 }

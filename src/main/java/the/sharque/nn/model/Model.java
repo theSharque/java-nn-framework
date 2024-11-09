@@ -25,11 +25,11 @@ public class Model {
     }
 
     public void reset() {
-        Arrays.stream(output).parallel().forEach(Neuron::reset);
+        Arrays.stream(output).forEach(Neuron::reset);
     }
 
     public void resetWeights() {
-        Arrays.stream(output).parallel().forEach(Neuron::resetWeights);
+        Arrays.stream(output).forEach(Neuron::resetWeights);
     }
 
     public double predict(double[][] data, double[][] test_result) {
@@ -48,11 +48,11 @@ public class Model {
             double[] resultLine = test_result[i];
 
             reset();
-            IntStream.range(0, dataLine.length).parallel().forEach(j -> input[j].setData(dataLine[j]));
+            IntStream.range(0, dataLine.length).forEach(j -> input[j].setData(dataLine[j]));
 
-            Arrays.stream(output).parallel().forEach(Neuron::predict);
+            Arrays.stream(output).forEach(Neuron::predict);
 
-            boolean required = IntStream.range(0, resultLine.length).parallel()
+            boolean required = IntStream.range(0, resultLine.length)
                     .anyMatch(j -> resultLine[j] != output[j].getResult());
 
             if (!required) {
@@ -70,15 +70,15 @@ public class Model {
             double[] resultLine = result[i];
 
             reset();
-            IntStream.range(0, dataLine.length).parallel().forEach(j -> input[j].setData(dataLine[j]));
+            IntStream.range(0, dataLine.length).forEach(j -> input[j].setData(dataLine[j]));
 
-            Arrays.stream(output).parallel().forEach(Neuron::predict);
+            Arrays.stream(output).forEach(Neuron::predict);
 
-            boolean required = IntStream.range(0, resultLine.length).parallel()
+            boolean required = IntStream.range(0, resultLine.length)
                     .anyMatch(j -> resultLine[j] != output[j].getResult());
 
             if (required) {
-                IntStream.range(0, resultLine.length).parallel().forEach(j -> output[j].learn(lr, resultLine[j]));
+                IntStream.range(0, resultLine.length).forEach(j -> output[j].learn(lr, resultLine[j]));
             } else {
                 learned += 1;
             }
@@ -89,7 +89,7 @@ public class Model {
 
     public void resetLearned() {
         learningData = null;
-        Arrays.stream(output).parallel().forEach(Neuron::resetLearned);
+        Arrays.stream(output).forEach(Neuron::resetLearned);
     }
 
     public void showLearning() {
@@ -103,6 +103,6 @@ public class Model {
     }
 
     public void shock() {
-        Arrays.stream(output).parallel().forEach(Neuron::shock);
+        Arrays.stream(output).forEach(Neuron::shock);
     }
 }

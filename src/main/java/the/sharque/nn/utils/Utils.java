@@ -2,7 +2,7 @@ package the.sharque.nn.utils;
 
 public class Utils {
 
-    public static final double MAD_LIMIT = 1e3;
+    public static final double MAD_LIMIT = 1e7;
     public static final double EPSILON = 1e-7;
     public static final double DROPOUT = 0.8;
 
