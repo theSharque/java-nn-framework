@@ -11,6 +11,7 @@ public class InputStable implements InputNeuron {
     private double weight = 1;
     private double learnedWeight = 0;
     private final Object lock = new Object();
+    private boolean showed = false;
 
     @Override
     public String toString() {
@@ -36,11 +37,23 @@ public class InputStable implements InputNeuron {
 
     @Override
     public void resetLearned() {
+        showed = false;
         learnedWeight = 0;
     }
 
     @Override
+    public void resetWeights() {
+        synchronized (lock) {
+            weight = 1;
+        }
+    }
+
+    @Override
     public String getLearning(String prefix) {
-        return String.format("WI:%7.2f", learnedWeight);
+        if (showed) {
+            return "";
+        } else {
+            return String.format("WI:%7.2f", learnedWeight);
+        }
     }
 }

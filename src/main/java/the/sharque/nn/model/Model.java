@@ -13,6 +13,8 @@ public class Model {
     @Getter
     private final Neuron[] output;
 
+    private String learningData = null;
+
     public Model(InputNeuron[] input, Neuron[] output) {
         if (input == null || input.length < 1) {
             throw new IllegalArgumentException("Input neurons contain data");
@@ -24,6 +26,10 @@ public class Model {
 
     public void reset() {
         Arrays.stream(output).parallel().forEach(Neuron::reset);
+    }
+
+    public void resetWeights() {
+        Arrays.stream(output).parallel().forEach(Neuron::resetWeights);
     }
 
     public double predict(double[][] data, double[][] test_result) {
@@ -82,13 +88,18 @@ public class Model {
     }
 
     public void resetLearned() {
+        learningData = null;
         Arrays.stream(output).parallel().forEach(Neuron::resetLearned);
     }
 
     public void showLearning() {
-        System.out.println(Arrays.stream(output)
-                .map(neuron -> neuron.getLearning("\t"))
-                .collect(Collectors.joining("")));
+        if (learningData == null) {
+            learningData = Arrays.stream(output)
+                    .map(neuron -> neuron.getLearning("\t"))
+                    .collect(Collectors.joining(""));
+        }
+
+        System.out.println(learningData);
     }
 
     public void shock() {

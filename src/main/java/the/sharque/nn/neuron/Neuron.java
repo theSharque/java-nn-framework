@@ -26,4 +26,6 @@ public interface Neuron extends Serializable {
 
     default void shock() {
     }
+
+    void resetWeights();
 }

@@ -1,9 +1,9 @@
 package the.sharque.nn.neuron;
 
 import static the.sharque.nn.utils.Utils.EPSILON;
+import static the.sharque.nn.utils.Utils.MAD_LIMIT;
 import static the.sharque.nn.utils.Utils.getRandomValue;
 import static the.sharque.nn.utils.Utils.isApplicable;
-import static the.sharque.nn.utils.Utils.limitValue;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -31,6 +31,7 @@ public class NeuronPerceptron implements Neuron {
     private boolean calculated;
     private Neuron[] inputs;
     private final boolean splittable;
+    private boolean showed = false;
 
     public NeuronPerceptron(boolean splittable, Neuron[]... inputs) {
         this.splittable = splittable;
@@ -83,58 +84,71 @@ public class NeuronPerceptron implements Neuron {
         if (result != value) {
             double diff = (value - result) / inputs.length;
             synchronized (lock) {
-                if (isApplicable()) {
-                    learnedBias += 1;
-                    bias += diff * learnRate;
-                    bias = limitValue(bias);
-                }
-
                 IntStream.range(0, inputs.length).parallel()
-                        .reduce((l, r) -> (diff - inputs[l].getResult() * weights[l]) * 2
-                                > (diff - inputs[r].getResult() * weights[r]) * 2 ? l : r)
-                        .ifPresent(i -> {
+                        .forEach(i -> {
                             double requiredValue = diff + inputs[i].getResult() * weights[i];
                             if (isApplicable()) {
                                 learned[i] += 1;
 
                                 weights[i] +=
                                         ((requiredValue / (inputs[i].getResult() + EPSILON)) - weights[i]) * learnRate;
-                                weights[i] = limitValue(weights[i]);
+                                if (weights[i] > MAD_LIMIT || weights[i] < -MAD_LIMIT) {
+                                    System.out.println("Reset perceptron weight");
+                                    resetWeights();
+                                }
 
                                 inputs[i].learn(learnRate, diff);
                             }
                         });
+                if (isApplicable()) {
+                    learnedBias += 1;
+                    bias += diff * learnRate;
+                    if (bias > MAD_LIMIT || bias < -MAD_LIMIT) {
+                        System.out.println("Reset perceptron bias");
+                        resetWeights();
+                    }
+                }
             }
         }
     }
 
     @Override
     public void resetLearned() {
-        this.learnedBias = 0;
-        Arrays.parallelSetAll(learned, value -> 0);
-        Arrays.stream(inputs).parallel().forEach(Neuron::resetLearned);
+        synchronized (lock) {
+            showed = false;
+            learnedBias = 0;
+            Arrays.parallelSetAll(learned, value -> 0);
+            Arrays.stream(inputs).parallel().forEach(Neuron::resetLearned);
+        }
     }
 
     @Override
     public String getLearning(String prefix) {
-        String inData = Arrays.stream(inputs).map(in -> in.getLearning(prefix + "\t"))
-                .collect(Collectors.joining(""));
-        if (inData.isEmpty()) {
-            return String.format("\n%sBL:%7.2f L:{ %s }",
-                    prefix,
-                    learnedBias,
-                    IntStream.range(0, inputs.length)
-                            .mapToObj(i -> String.format("WL:%7.2f", learned[i]))
-                            .collect(Collectors.joining(" | ")));
+        if (showed) {
+            return "";
         } else {
-            return String.format("\n%sBL:%7.2f L:{ %s }\n%sI:{%s}",
-                    prefix,
-                    learnedBias,
-                    IntStream.range(0, inputs.length)
-                            .mapToObj(i -> String.format("WL:%7.2f", learned[i]))
-                            .collect(Collectors.joining(" | ")),
-                    prefix,
-                    inData);
+            showed = true;
+
+            String inData = Arrays.stream(inputs).map(in -> in.getLearning(prefix + "\t"))
+                    .collect(Collectors.joining(""));
+
+            if (inData.isEmpty()) {
+                return String.format("\n%sBL:%7.2f L:{ %s }",
+                        prefix,
+                        learnedBias,
+                        IntStream.range(0, inputs.length)
+                                .mapToObj(i -> String.format("WL:%7.2f", learned[i]))
+                                .collect(Collectors.joining(" | ")));
+            } else {
+                return String.format("\n%sBL:%7.2f L:{ %s }\n%sI:{%s}",
+                        prefix,
+                        learnedBias,
+                        IntStream.range(0, inputs.length)
+                                .mapToObj(i -> String.format("WL:%7.2f", learned[i]))
+                                .collect(Collectors.joining(" | ")),
+                        prefix,
+                        inData);
+            }
         }
     }
 
@@ -166,6 +180,12 @@ public class NeuronPerceptron implements Neuron {
         }
 
         Arrays.stream(inputs).parallel().forEach(Neuron::shock);
+    }
+
+    @Override
+    public void resetWeights() {
+        weights = DoubleStream.generate(Utils::getRandomValue).limit(weights.length).toArray();
+        bias = getRandomValue();
     }
 
     @Override

@@ -1,8 +1,8 @@
 package the.sharque.nn.neuron;
 
 import static the.sharque.nn.utils.Utils.EPSILON;
+import static the.sharque.nn.utils.Utils.MAD_LIMIT;
 import static the.sharque.nn.utils.Utils.isApplicable;
-import static the.sharque.nn.utils.Utils.limitValue;
 
 import lombok.Setter;
 
@@ -13,6 +13,7 @@ public class InputFlex implements InputNeuron {
     private double weight = 1;
     private double learnedWeight = 0;
     private final Object lock = new Object();
+    private boolean showed = false;
 
     @Override
     public String toString() {
@@ -30,7 +31,11 @@ public class InputFlex implements InputNeuron {
             if (isApplicable()) {
                 double requiredValue = (value - data) + data * weight;
                 weight += ((requiredValue / (data + EPSILON)) - weight) * learnRate;
-                weight = limitValue(weight);
+                if (weight > MAD_LIMIT || weight < -MAD_LIMIT) {
+                    System.out.println("Reset inputFlex weight");
+                    resetWeights();
+                }
+
                 learnedWeight++;
             }
         }
@@ -38,11 +43,23 @@ public class InputFlex implements InputNeuron {
 
     @Override
     public void resetLearned() {
+        showed = false;
         learnedWeight = 0;
     }
 
     @Override
+    public void resetWeights() {
+        synchronized (lock) {
+            weight = 1;
+        }
+    }
+
+    @Override
     public String getLearning(String prefix) {
-        return String.format("%sWI:%7.2f", prefix, learnedWeight);
+        if (showed) {
+            return "";
+        } else {
+            return String.format("%sWI:%7.2f", prefix, learnedWeight);
+        }
     }
 }

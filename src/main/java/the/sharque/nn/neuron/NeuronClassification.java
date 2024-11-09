@@ -14,6 +14,7 @@ public class NeuronClassification implements Neuron {
     private final Neuron[] inputs;
     private boolean calculated;
     private final Object lock = new Object();
+    private boolean showed = false;
 
     public NeuronClassification(Neuron[]... inputs) {
         this.inputs = Arrays.stream(inputs).parallel().flatMap(Stream::of).toArray(Neuron[]::new);
@@ -64,20 +65,34 @@ public class NeuronClassification implements Neuron {
 
     @Override
     public void resetLearned() {
+        showed = false;
         Arrays.stream(inputs).parallel().forEach(Neuron::resetLearned);
     }
 
     @Override
     public String getLearning(String prefix) {
-        return Arrays.stream(inputs)
-                .map(neuron -> neuron.getLearning(prefix))
-                .collect(Collectors.joining(""));
+        if (showed) {
+            return "";
+        } else {
+            showed = true;
+            return Arrays.stream(inputs)
+                    .map(neuron -> neuron.getLearning(prefix))
+                    .collect(Collectors.joining(""));
+        }
     }
 
     @Override
     public void shock() {
         synchronized (lock) {
             Arrays.stream(inputs).parallel().forEach(Neuron::shock);
+        }
+    }
+
+    @Override
+    public void resetWeights() {
+        synchronized (lock) {
+            this.calculated = false;
+            Arrays.stream(inputs).parallel().forEach(Neuron::resetWeights);
         }
     }
 }
