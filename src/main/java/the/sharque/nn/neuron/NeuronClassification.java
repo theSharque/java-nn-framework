@@ -12,6 +12,7 @@ public class NeuronClassification implements Neuron {
 
     @Getter
     private double result;
+    private double minResult;
 
     private final Neuron[] inputs;
     private boolean calculated;
@@ -35,17 +36,20 @@ public class NeuronClassification implements Neuron {
         lock.lock();
         try {
             if (!calculated) {
-                Arrays.stream(inputs).unordered().forEach(Neuron::predict);
-
-                result = IntStream.range(0, inputs.length).unordered()
-                        .reduce((l, r) -> inputs[l].getResult() > inputs[r].getResult() ? l : r)
-                        .orElse(0);
-
+                result = findTop(0, inputs.length);
                 calculated = true;
             }
         } finally {
             lock.unlock();
         }
+    }
+
+    private int findTop(int from, int to) {
+        Arrays.stream(inputs).unordered().forEach(Neuron::predict);
+
+        return IntStream.range(from, to).unordered()
+                .reduce((l, r) -> inputs[l].getResult() >= inputs[r].getResult() ? l : r)
+                .orElse(0);
     }
 
     @Override
@@ -64,9 +68,12 @@ public class NeuronClassification implements Neuron {
         predict();
 
         if (result != value) {
-            inputs[(int) value].learn(learnRate, inputs[(int) value].getResult() + 1);
+            int up = result > value ? findTop(0, (int) value) : findTop((int) value, inputs.length);
+
+            inputs[up].learn(learnRate, inputs[up].getResult() + 1);
             inputs[(int) result].learn(learnRate, inputs[(int) result].getResult() - 1);
         }
+
         lock.unlock();
     }
 

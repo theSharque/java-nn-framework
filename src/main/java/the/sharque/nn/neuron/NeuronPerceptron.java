@@ -21,9 +21,13 @@ public class NeuronPerceptron implements Neuron {
     @Getter
     private double result;
     @Getter
-    private double learnedBias;
+    private double learnedBiasPlus;
     @Getter
-    private double[] learned;
+    private double learnedBiasMinus;
+    @Getter
+    private double[] learnedPlus;
+    @Getter
+    private double[] learnedMinus;
     @Getter
     private double[] weights;
     @Setter
@@ -39,7 +43,8 @@ public class NeuronPerceptron implements Neuron {
         this.splittable = splittable;
         this.inputs = Arrays.stream(inputs).flatMap(Stream::of).toArray(Neuron[]::new);
         weights = DoubleStream.generate(Utils::getRandomValue).limit(this.inputs.length).toArray();
-        learned = DoubleStream.generate(() -> 0).limit(this.inputs.length).toArray();
+        learnedPlus = DoubleStream.generate(() -> 0).limit(this.inputs.length).toArray();
+        learnedMinus = DoubleStream.generate(() -> 0).limit(this.inputs.length).toArray();
 
         bias = getRandomValue();
         calculated = true;
@@ -90,15 +95,21 @@ public class NeuronPerceptron implements Neuron {
         predict();
 
         if (result != value) {
-            double diff = (value - result) / inputs.length;
+            double mass = IntStream.range(0, inputs.length).unordered()
+                    .mapToDouble(i -> inputs[i].getResult() * weights[i])
+                    .sum() - value;
             IntStream.range(0, inputs.length).unordered()
                     .forEach(i -> {
-                        double requiredValue = diff + inputs[i].getResult() * weights[i];
                         if (isApplicable()) {
-                            learned[i] += 1;
+                            double diff = mass * inputs[i].getResult();
 
-                            weights[i] +=
-                                    ((requiredValue / (inputs[i].getResult() + EPSILON)) - weights[i]) * learnRate;
+                            if (diff > 0) {
+                                learnedPlus[i] += 1;
+                            } else {
+                                learnedMinus[i] += 1;
+                            }
+
+                            weights[i] -= diff * learnRate;
                             if (weights[i] > MAD_LIMIT || weights[i] < -MAD_LIMIT) {
                                 resetWeights();
                             }
@@ -106,9 +117,17 @@ public class NeuronPerceptron implements Neuron {
                             inputs[i].learn(learnRate, diff);
                         }
                     });
+
             if (isApplicable()) {
-                learnedBias += 1;
-                bias += diff * learnRate;
+                double diff = result - value;
+
+                if (diff > 0) {
+                    learnedBiasPlus += 1;
+                } else {
+                    learnedBiasMinus += 1;
+                }
+
+                bias -= diff * learnRate;
                 if (bias > MAD_LIMIT || bias < -MAD_LIMIT) {
                     resetWeights();
                 }
@@ -121,8 +140,10 @@ public class NeuronPerceptron implements Neuron {
     public void resetLearned() {
         lock.lock();
         showed = false;
-        learnedBias = 0;
-        Arrays.parallelSetAll(learned, value -> 0);
+        learnedBiasPlus = 0;
+        learnedBiasMinus = 0;
+        Arrays.parallelSetAll(learnedPlus, value -> 0);
+        Arrays.parallelSetAll(learnedMinus, value -> 0);
         Arrays.stream(inputs).forEach(Neuron::resetLearned);
         lock.unlock();
     }
@@ -138,18 +159,20 @@ public class NeuronPerceptron implements Neuron {
                     .collect(Collectors.joining(""));
 
             if (inData.isEmpty()) {
-                return String.format("\n%sBL:%7.2f L:{ %s }",
+                return String.format("\n%sBP:%5.0f BM:%5.0f L:{ %s }",
                         prefix,
-                        learnedBias,
+                        learnedBiasPlus,
+                        learnedBiasMinus,
                         IntStream.range(0, inputs.length)
-                                .mapToObj(i -> String.format("WL:%7.2f", learned[i]))
+                                .mapToObj(i -> String.format("WP:%5.0f WM:%5.0f", learnedPlus[i], learnedMinus[i]))
                                 .collect(Collectors.joining(" | ")));
             } else {
-                return String.format("\n%sBL:%7.2f L:{ %s }\n%sI:{%s}",
+                return String.format("\n%sBP:%5.0f BM:%5.0f L:{ %s }\n%sI:{%s}",
                         prefix,
-                        learnedBias,
+                        learnedBiasPlus,
+                        learnedBiasMinus,
                         IntStream.range(0, inputs.length)
-                                .mapToObj(i -> String.format("WL:%7.2f", learned[i]))
+                                .mapToObj(i -> String.format("WP:%7.2f WM:%7.2f", learnedPlus[i], learnedMinus[i]))
                                 .collect(Collectors.joining(" | ")),
                         prefix,
                         inData);
@@ -160,30 +183,42 @@ public class NeuronPerceptron implements Neuron {
     @Override
     public void shock() {
         lock.lock();
-        double biggest = Arrays.stream(learned).sum();
-        IntStream.range(0, learned.length)
-                .filter(i -> learned[i] > 0)
-                .filter(i -> learned[i] == biggest).findFirst()
-                .ifPresent(key -> {
-                    learned = new double[learned.length + 1];
 
-                    Neuron[] newInputs = new Neuron[inputs.length + 1];
-                    double[] newWeights = new double[weights.length + 1];
+        if (learnedBiasMinus == learnedBiasPlus) {
+            bias = 0;
+        }
 
-                    IntStream.range(0, inputs.length).forEach(i -> {
-                        newInputs[i] = inputs[i];
-                        newWeights[i] = weights[i];
-                    });
+        IntStream.range(0, weights.length)
+                .filter(i -> learnedPlus[i] > 0 && learnedMinus[i] > 0 && learnedPlus[i] == learnedMinus[i])
+                .forEach(i -> weights[i] = 0);
 
-                    newInputs[inputs.length] = inputs[key];
-                    newWeights[weights.length] = getRandomValue();
-                    weights[key] = getRandomValue();
-
-                    inputs = newInputs;
-                    weights = newWeights;
-                });
-        Arrays.stream(inputs).forEach(Neuron::shock);
         lock.unlock();
+
+//        lock.lock();
+//        double biggest = Arrays.stream(learned).sum();
+//        IntStream.range(0, learned.length)
+//                .filter(i -> learned[i] > 0)
+//                .filter(i -> learned[i] == biggest).findFirst()
+//                .ifPresent(key -> {
+//                    learned = new double[learned.length + 1];
+//
+//                    Neuron[] newInputs = new Neuron[inputs.length + 1];
+//                    double[] newWeights = new double[weights.length + 1];
+//
+//                    IntStream.range(0, inputs.length).forEach(i -> {
+//                        newInputs[i] = inputs[i];
+//                        newWeights[i] = weights[i];
+//                    });
+//
+//                    newInputs[inputs.length] = inputs[key];
+//                    newWeights[weights.length] = getRandomValue();
+//                    weights[key] = getRandomValue();
+//
+//                    inputs = newInputs;
+//                    weights = newWeights;
+//                });
+//        Arrays.stream(inputs).forEach(Neuron::shock);
+//        lock.unlock();
     }
 
     @Override
