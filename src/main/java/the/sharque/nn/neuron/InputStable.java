@@ -24,7 +24,7 @@ public class InputStable implements InputNeuron {
     }
 
     @Override
-    public void learn(double learnRate, double value) {
+    public void learn(double learnRate, double required) {
         synchronized (lock) {
             if (isApplicable()) {
                 if (data * weight > 1 || data * weight < -1) {

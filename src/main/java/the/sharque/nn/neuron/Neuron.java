@@ -18,7 +18,7 @@ public interface Neuron extends Serializable {
     default void reset() {
     }
 
-    default void learn(double learnRate, double value) {
+    default void learn(double learnRate, double required) {
     }
 
     default void resetLearned() {

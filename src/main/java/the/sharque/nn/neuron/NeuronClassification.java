@@ -63,12 +63,12 @@ public class NeuronClassification implements Neuron {
     }
 
     @Override
-    public void learn(double learnRate, double value) {
+    public void learn(double learnRate, double required) {
         lock.lock();
         predict();
 
-        if (result != value) {
-            int up = result > value ? findTop(0, (int) value) : findTop((int) value, inputs.length);
+        if (result != required) {
+            int up = result > required ? findTop(0, (int) required) : findTop((int) required, inputs.length);
 
             inputs[up].learn(learnRate, inputs[up].getResult() + 1);
             inputs[(int) result].learn(learnRate, inputs[(int) result].getResult() - 1);

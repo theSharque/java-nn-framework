@@ -26,10 +26,10 @@ public class InputFlex implements InputNeuron {
     }
 
     @Override
-    public void learn(double learnRate, double value) {
+    public void learn(double learnRate, double required) {
         synchronized (lock) {
             if (isApplicable()) {
-                double requiredValue = (value - data) + data * weight;
+                double requiredValue = (required - data) + data * weight;
                 weight += ((requiredValue / (data + EPSILON)) - weight) * learnRate;
                 if (weight > MAD_LIMIT || weight < -MAD_LIMIT) {
                     System.out.println("Reset inputFlex weight");

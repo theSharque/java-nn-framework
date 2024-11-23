@@ -90,25 +90,25 @@ public class NeuronGate implements Neuron {
     }
 
     @Override
-    public void learn(double learnRate, double value) {
+    public void learn(double learnRate, double required) {
         lock.lock();
         predict();
 
-        if (result != value) {
+        if (result != required) {
             double mass = IntStream.range(0, inputs.length).unordered()
                     .mapToDouble(i -> inputs[i].getResult() * weights[i])
                     .sum();
 
             double newMass = IntStream.range(0, inputs.length).unordered()
                     .mapToDouble(i -> {
-                        inputs[i].learn(learnRate, inputs[i].getResult() * (value / mass) * learnRate);
+                        inputs[i].learn(learnRate, inputs[i].getResult() * (required / mass) * learnRate);
                         inputs[i].predict();
                         return inputs[i].getResult() * weights[i];
                     }).sum();
 
             IntStream.range(0, inputs.length).unordered().forEach(i -> {
                 if (isApplicable()) {
-                    double diff = (newMass - value) * inputs[i].getResult();
+                    double diff = (newMass - required) * inputs[i].getResult();
 
                     weights[i] -= diff * learnRate;
                     if (weights[i] > MAD_LIMIT || weights[i] < -MAD_LIMIT) {
@@ -130,15 +130,15 @@ public class NeuronGate implements Neuron {
                     learnedGateMinus += 1;
                 }
 
-                lowGate -= (lowGate - result) * learnRate;
+                lowGate -= (lowGate - required) * learnRate;
 
                 if (lowGate > MAD_LIMIT || lowGate < -MAD_LIMIT) {
                     resetWeights();
                 }
             }
+            calculated = false;
         }
 
-        calculated = false;
         lock.unlock();
     }
 
