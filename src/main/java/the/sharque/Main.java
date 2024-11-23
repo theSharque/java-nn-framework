@@ -94,19 +94,19 @@ public class Main {
 
 // Separate gate
         Neuron[] layer1 = Stream.generate(() -> new NeuronGate(true, inputs))
-                .limit(7)
+                .limit(3)
                 .toArray(Neuron[]::new);
 
         Neuron[] class1 = new Neuron[]{new NeuronClassification(layer1)};
 
         Neuron[] layer2 = Stream.generate(() -> new NeuronGate(true, inputs))
-                .limit(7)
+                .limit(3)
                 .toArray(Neuron[]::new);
 
         Neuron[] class2 = new Neuron[]{new NeuronClassification(layer2)};
 
         Neuron[] layer3 = Stream.generate(() -> new NeuronGate(true, inputs))
-                .limit(7)
+                .limit(3)
                 .toArray(Neuron[]::new);
 
         Neuron[] class3 = new Neuron[]{new NeuronClassification(layer3)};
