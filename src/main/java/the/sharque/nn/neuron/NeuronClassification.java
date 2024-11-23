@@ -68,10 +68,14 @@ public class NeuronClassification implements Neuron {
         predict();
 
         if (result != required) {
-            int up = result > required ? findTop(0, (int) required) : findTop((int) required, inputs.length);
-
-            inputs[up].learn(learnRate, inputs[up].getResult() + 1);
             inputs[(int) result].learn(learnRate, inputs[(int) result].getResult() - 1);
+            if (result > required) {
+                IntStream.range(0, (int) required)
+                        .forEach(i -> inputs[i].learn(learnRate, inputs[i].getResult() + 1));
+            } else {
+                IntStream.range((int) required, inputs.length)
+                        .forEach(i -> inputs[i].learn(learnRate, inputs[i].getResult() + 1));
+            }
         }
 
         lock.unlock();

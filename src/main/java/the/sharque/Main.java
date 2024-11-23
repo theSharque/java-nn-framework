@@ -32,7 +32,7 @@ public class Main {
         Random rnd = new Random(31);
         Collections.shuffle(dataset, rnd);
 
-        int length = 200;
+        int length = 150;
 
         double[][] train = dataset.stream().limit(length)
                 .map(line -> line.stream()
@@ -94,19 +94,19 @@ public class Main {
 
 // Separate gate
         Neuron[] layer1 = Stream.generate(() -> new NeuronGate(true, inputs))
-                .limit(3)
+                .limit(7)
                 .toArray(Neuron[]::new);
 
         Neuron[] class1 = new Neuron[]{new NeuronClassification(layer1)};
 
         Neuron[] layer2 = Stream.generate(() -> new NeuronGate(true, inputs))
-                .limit(3)
+                .limit(7)
                 .toArray(Neuron[]::new);
 
         Neuron[] class2 = new Neuron[]{new NeuronClassification(layer2)};
 
         Neuron[] layer3 = Stream.generate(() -> new NeuronGate(true, inputs))
-                .limit(3)
+                .limit(7)
                 .toArray(Neuron[]::new);
 
         Neuron[] class3 = new Neuron[]{new NeuronClassification(layer3)};

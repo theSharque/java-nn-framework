@@ -7,7 +7,7 @@ public class Utils {
     public static final double DROPOUT = 0.7;
 
     public static double getRandomValue() {
-        return Math.random() - 0.5;
+        return Math.random();
     }
 
     public static boolean isApplicable() {
