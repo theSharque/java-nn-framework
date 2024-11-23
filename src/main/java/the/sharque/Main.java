@@ -17,7 +17,7 @@ import the.sharque.nn.neuron.InputNeuron;
 import the.sharque.nn.neuron.InputRaw;
 import the.sharque.nn.neuron.Neuron;
 import the.sharque.nn.neuron.NeuronClassification;
-import the.sharque.nn.neuron.NeuronPerceptron;
+import the.sharque.nn.neuron.NeuronGate;
 
 public class Main {
 
@@ -92,25 +92,62 @@ public class Main {
                 .limit(7)
                 .toArray(InputNeuron[]::new);
 
-        Neuron[] layer1 = Stream.generate(() -> new NeuronPerceptron(true, inputs))
+// Separate gate
+        Neuron[] layer1 = Stream.generate(() -> new NeuronGate(true, inputs))
                 .limit(3)
                 .toArray(Neuron[]::new);
 
         Neuron[] class1 = new Neuron[]{new NeuronClassification(layer1)};
 
-        Neuron[] layer2 = Stream.generate(() -> new NeuronPerceptron(true, inputs))
+        Neuron[] layer2 = Stream.generate(() -> new NeuronGate(true, inputs))
                 .limit(3)
                 .toArray(Neuron[]::new);
 
         Neuron[] class2 = new Neuron[]{new NeuronClassification(layer2)};
 
-        Neuron[] layer3 = Stream.generate(() -> new NeuronPerceptron(true, inputs))
+        Neuron[] layer3 = Stream.generate(() -> new NeuronGate(true, inputs))
                 .limit(3)
                 .toArray(Neuron[]::new);
 
         Neuron[] class3 = new Neuron[]{new NeuronClassification(layer3)};
 
         Neuron[] output = new Neuron[]{new NeuronClassification(class1, class2, class3)};
+
+// Separate perceptron
+//        Neuron[] layer1 = Stream.generate(() -> new NeuronPerceptron(true, inputs))
+//                .limit(3)
+//                .toArray(Neuron[]::new);
+//
+//        Neuron[] class1 = new Neuron[]{new NeuronClassification(layer1)};
+//
+//        Neuron[] layer2 = Stream.generate(() -> new NeuronPerceptron(true, inputs))
+//                .limit(3)
+//                .toArray(Neuron[]::new);
+//
+//        Neuron[] class2 = new Neuron[]{new NeuronClassification(layer2)};
+//
+//        Neuron[] layer3 = Stream.generate(() -> new NeuronPerceptron(true, inputs))
+//                .limit(3)
+//                .toArray(Neuron[]::new);
+//
+//        Neuron[] class3 = new Neuron[]{new NeuronClassification(layer3)};
+//
+//        Neuron[] output = new Neuron[]{new NeuronClassification(class1, class2, class3)};
+
+// Single shrub
+//        Neuron[] layer1 = Stream.generate(() -> new NeuronPerceptron(true, inputs))
+//                .limit(9)
+//                .toArray(Neuron[]::new);
+//
+//        Neuron[] layer2 = Stream.generate(() -> new NeuronPerceptron(true, layer1))
+//                .limit(6)
+//                .toArray(Neuron[]::new);
+//
+//        Neuron[] layer3 = Stream.generate(() -> new NeuronPerceptron(true, layer2))
+//                .limit(3)
+//                .toArray(Neuron[]::new);
+//
+//        Neuron[] output = new Neuron[]{new NeuronClassification(layer3)};
 
         return new Model(inputs, output);
     }

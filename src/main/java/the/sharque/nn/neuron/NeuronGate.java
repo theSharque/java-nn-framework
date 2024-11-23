@@ -15,14 +15,14 @@ import lombok.Getter;
 import lombok.Setter;
 import the.sharque.nn.utils.Utils;
 
-public class NeuronPerceptron implements Neuron {
+public class NeuronGate implements Neuron {
 
     @Getter
     private double result;
     @Getter
-    private double learnedBiasPlus;
+    private double learnedGatePlus;
     @Getter
-    private double learnedBiasMinus;
+    private double learnedGateMinus;
     @Getter
     private double[] learnedPlus;
     @Getter
@@ -30,7 +30,7 @@ public class NeuronPerceptron implements Neuron {
     @Getter
     private double[] weights;
     @Setter
-    private double bias;
+    private double lowGate;
     private final Lock lock = new ReentrantLock();
 
     private boolean calculated;
@@ -38,14 +38,14 @@ public class NeuronPerceptron implements Neuron {
     private final boolean splittable;
     private boolean showed = false;
 
-    public NeuronPerceptron(boolean splittable, Neuron[]... inputs) {
+    public NeuronGate(boolean splittable, Neuron[]... inputs) {
         this.splittable = splittable;
         this.inputs = Arrays.stream(inputs).flatMap(Stream::of).toArray(Neuron[]::new);
         weights = DoubleStream.generate(Utils::getRandomValue).limit(this.inputs.length).toArray();
         learnedPlus = DoubleStream.generate(() -> 0).limit(this.inputs.length).toArray();
         learnedMinus = DoubleStream.generate(() -> 0).limit(this.inputs.length).toArray();
 
-        bias = 0.0d;
+        lowGate = getRandomValue();
         calculated = false;
     }
 
@@ -63,12 +63,14 @@ public class NeuronPerceptron implements Neuron {
         lock.lock();
         try {
             if (!calculated) {
-                result = bias + IntStream.range(0, inputs.length).unordered()
+                double summ = IntStream.range(0, inputs.length).unordered()
                         .mapToDouble(i -> {
                             inputs[i].predict();
                             return inputs[i].getResult() * weights[i];
                         })
                         .sum();
+
+                result = summ >= lowGate ? summ : 0;
 
                 calculated = true;
             }
@@ -122,16 +124,15 @@ public class NeuronPerceptron implements Neuron {
             });
 
             if (isApplicable()) {
-                double diff = result - value;
-
-                if (diff >= 0) {
-                    learnedBiasPlus += 1;
+                if(result != 0) {
+                    learnedGatePlus += 1;
                 } else {
-                    learnedBiasMinus += 1;
+                    learnedGateMinus += 1;
                 }
 
-                bias -= diff * learnRate;
-                if (bias > MAD_LIMIT || bias < -MAD_LIMIT) {
+                lowGate -= (lowGate - result) * learnRate;
+
+                if (lowGate > MAD_LIMIT || lowGate < -MAD_LIMIT) {
                     resetWeights();
                 }
             }
@@ -145,8 +146,8 @@ public class NeuronPerceptron implements Neuron {
     public void resetLearned() {
         lock.lock();
         showed = false;
-        learnedBiasPlus = 0;
-        learnedBiasMinus = 0;
+        learnedGatePlus = 0;
+        learnedGateMinus = 0;
         Arrays.parallelSetAll(learnedPlus, value -> 0);
         Arrays.parallelSetAll(learnedMinus, value -> 0);
         Arrays.stream(inputs).forEach(Neuron::resetLearned);
@@ -164,18 +165,18 @@ public class NeuronPerceptron implements Neuron {
                     .collect(Collectors.joining(""));
 
             if (inData.isEmpty()) {
-                return String.format("\n%sBP:%5.0f BM:%5.0f L:{ %s }",
+                return String.format("\n%sGP:%5.0f GM:%5.0f L:{ %s }",
                         prefix,
-                        learnedBiasPlus,
-                        learnedBiasMinus,
+                        learnedGatePlus,
+                        learnedGateMinus,
                         IntStream.range(0, inputs.length)
                                 .mapToObj(i -> String.format("WP:%5.0f WM:%5.0f", learnedPlus[i], learnedMinus[i]))
                                 .collect(Collectors.joining(" | ")));
             } else {
-                return String.format("\n%sBP:%5.0f BM:%5.0f L:{ %s }\n%sI:{%s}",
+                return String.format("\n%sGP:%5.0f GM:%5.0f L:{ %s }\n%sI:{%s}",
                         prefix,
-                        learnedBiasPlus,
-                        learnedBiasMinus,
+                        learnedGatePlus,
+                        learnedGateMinus,
                         IntStream.range(0, inputs.length)
                                 .mapToObj(i -> String.format("WP:%5.0f WM:%5.0f", learnedPlus[i], learnedMinus[i]))
                                 .collect(Collectors.joining(" | ")),
@@ -189,8 +190,8 @@ public class NeuronPerceptron implements Neuron {
     public void shock() {
         lock.lock();
 
-        if (learnedBiasMinus == learnedBiasPlus) {
-            bias = 0;
+        if (learnedGateMinus == learnedGatePlus) {
+            lowGate = getRandomValue();
         }
 
         IntStream.range(0, weights.length)
@@ -229,7 +230,7 @@ public class NeuronPerceptron implements Neuron {
     @Override
     public void resetWeights() {
         weights = DoubleStream.generate(Utils::getRandomValue).limit(weights.length).toArray();
-        bias = getRandomValue();
+        lowGate = getRandomValue();
     }
 
     @Override
