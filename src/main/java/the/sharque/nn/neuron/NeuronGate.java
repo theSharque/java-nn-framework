@@ -24,9 +24,9 @@ public class NeuronGate implements Neuron {
     @Getter
     private double learnedGateMinus;
     @Getter
-    private double[] learnedPlus;
+    private final double[] learnedPlus;
     @Getter
-    private double[] learnedMinus;
+    private final double[] learnedMinus;
     @Getter
     private double[] weights;
     @Setter
@@ -34,7 +34,7 @@ public class NeuronGate implements Neuron {
     private final Lock lock = new ReentrantLock();
 
     private boolean calculated;
-    private Neuron[] inputs;
+    private final Neuron[] inputs;
     private final boolean splittable;
     private boolean showed = false;
 
@@ -51,8 +51,9 @@ public class NeuronGate implements Neuron {
 
     @Override
     public String toString() {
-        return String.format("{R: %2.4f (W: [%s]) {I: [%s]}",
+        return String.format("{R: %2.4f G: %2.4f (W: [%s]) {I: [%s]}",
                 result,
+                lowGate,
                 Arrays.stream(weights).mapToObj(value -> String.format("%.2f", value))
                         .collect(Collectors.joining(", ")),
                 Arrays.stream(inputs).map(Object::toString).collect(Collectors.joining(", ")));
@@ -124,13 +125,17 @@ public class NeuronGate implements Neuron {
             });
 
             if (isApplicable()) {
-                if(result != 0) {
+                if (required > 0) {
+                    if (required > lowGate) {
+                        learnedGatePlus += 1;
+                    } else {
+                        learnedGateMinus += 1;
+                    }
+                    lowGate += (required - lowGate) * learnRate;
+                } else if (lowGate < result) {
                     learnedGatePlus += 1;
-                } else {
-                    learnedGateMinus += 1;
+                    lowGate += (result - lowGate) * learnRate;
                 }
-
-                lowGate -= (lowGate - required) * learnRate;
 
                 if (lowGate > MAD_LIMIT || lowGate < -MAD_LIMIT) {
                     resetWeights();

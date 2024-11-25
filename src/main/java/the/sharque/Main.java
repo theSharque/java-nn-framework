@@ -32,7 +32,7 @@ public class Main {
         Random rnd = new Random(31);
         Collections.shuffle(dataset, rnd);
 
-        int length = 150;
+        int length = 50;
 
         double[][] train = dataset.stream().limit(length)
                 .map(line -> line.stream()
@@ -85,6 +85,8 @@ public class Main {
                 oldLearned = learned;
             }
         } while (learned < 1);
+
+        System.out.printf("Done in %d steps\n", step);
     }
 
     private static Model buildModel() {
@@ -97,21 +99,21 @@ public class Main {
                 .limit(3)
                 .toArray(Neuron[]::new);
 
-        Neuron[] class1 = new Neuron[]{new NeuronClassification(layer1)};
+        Neuron[] class1 = new Neuron[]{new NeuronClassification(false, layer1)};
 
         Neuron[] layer2 = Stream.generate(() -> new NeuronGate(true, inputs))
                 .limit(3)
                 .toArray(Neuron[]::new);
 
-        Neuron[] class2 = new Neuron[]{new NeuronClassification(layer2)};
+        Neuron[] class2 = new Neuron[]{new NeuronClassification(false, layer2)};
 
         Neuron[] layer3 = Stream.generate(() -> new NeuronGate(true, inputs))
                 .limit(3)
                 .toArray(Neuron[]::new);
 
-        Neuron[] class3 = new Neuron[]{new NeuronClassification(layer3)};
+        Neuron[] class3 = new Neuron[]{new NeuronClassification(false, layer3)};
 
-        Neuron[] output = new Neuron[]{new NeuronClassification(class1, class2, class3)};
+        Neuron[] output = new Neuron[]{new NeuronClassification(true, class1, class2, class3)};
 
 // Separate perceptron
 //        Neuron[] layer1 = Stream.generate(() -> new NeuronPerceptron(true, inputs))

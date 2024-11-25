@@ -12,15 +12,16 @@ public class NeuronClassification implements Neuron {
 
     @Getter
     private double result;
-    private double minResult;
 
     private final Neuron[] inputs;
+    private final boolean exact;
     private boolean calculated;
     private final Lock lock = new ReentrantLock();
     private boolean showed = false;
 
-    public NeuronClassification(Neuron[]... inputs) {
+    public NeuronClassification(boolean exact, Neuron[]... inputs) {
         this.inputs = Arrays.stream(inputs).flatMap(Stream::of).toArray(Neuron[]::new);
+        this.exact = exact;
         calculated = false;
     }
 
@@ -36,20 +37,23 @@ public class NeuronClassification implements Neuron {
         lock.lock();
         try {
             if (!calculated) {
-                result = findTop(0, inputs.length);
+                Arrays.stream(inputs).unordered().forEach(Neuron::predict);
+
+                result = IntStream.range(0, inputs.length).unordered()
+                        .reduce((l, r) -> inputs[l].getResult() > inputs[r].getResult() ? l : r)
+                        .orElse(0);
+
+                double max = inputs[(int) result].getResult();
+
+                if (Arrays.stream(inputs).mapToDouble(Neuron::getResult).filter(value -> value == max).count() > 1) {
+                    result = -1;
+                }
+
                 calculated = true;
             }
         } finally {
             lock.unlock();
         }
-    }
-
-    private int findTop(int from, int to) {
-        Arrays.stream(inputs).unordered().forEach(Neuron::predict);
-
-        return IntStream.range(from, to).unordered()
-                .reduce((l, r) -> inputs[l].getResult() >= inputs[r].getResult() ? l : r)
-                .orElse(0);
     }
 
     @Override
@@ -68,13 +72,23 @@ public class NeuronClassification implements Neuron {
         predict();
 
         if (result != required) {
-            inputs[(int) result].learn(learnRate, inputs[(int) result].getResult() - 1);
-            if (result > required) {
-                IntStream.range(0, (int) required)
-                        .forEach(i -> inputs[i].learn(learnRate, inputs[i].getResult() + 1));
+            if (exact) {
+                if (result >= 0) {
+                    inputs[(int) result].learn(learnRate, inputs[(int) result].getResult() - 1);
+                }
+                inputs[(int) required].learn(learnRate, inputs[(int) required].getResult() + 1);
             } else {
-                IntStream.range((int) required, inputs.length)
-                        .forEach(i -> inputs[i].learn(learnRate, inputs[i].getResult() + 1));
+                if (result >= 0) {
+                    inputs[(int) result].learn(learnRate, inputs[(int) result].getResult() - 1);
+                }
+
+                if (result > required) {
+                    IntStream.range(0, (int) required)
+                            .forEach(i -> inputs[i].learn(learnRate, inputs[i].getResult() + 1));
+                } else {
+                    IntStream.range((int) required, inputs.length)
+                            .forEach(i -> inputs[i].learn(learnRate, inputs[i].getResult() + 1));
+                }
             }
         }
 
