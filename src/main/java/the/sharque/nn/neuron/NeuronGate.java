@@ -102,7 +102,8 @@ public class NeuronGate implements Neuron {
 
             double newMass = IntStream.range(0, inputs.length).unordered()
                     .mapToDouble(i -> {
-                        inputs[i].learn(learnRate, inputs[i].getResult() * (required / mass) * learnRate);
+                        double reqVal = (required - inputs[i].getResult()) * weights[i];
+                        inputs[i].learn(learnRate, reqVal);
                         inputs[i].predict();
                         return inputs[i].getResult() * weights[i];
                     }).sum();

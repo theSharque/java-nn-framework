@@ -1,5 +1,6 @@
 package the.sharque.nn.neuron;
 
+import static the.sharque.nn.utils.Utils.EPSILON;
 import static the.sharque.nn.utils.Utils.MAD_LIMIT;
 import static the.sharque.nn.utils.Utils.getRandomValue;
 import static the.sharque.nn.utils.Utils.isApplicable;
@@ -28,6 +29,7 @@ public class NeuronPerceptron implements Neuron {
     @Getter
     private double[] learnedMinus;
     @Getter
+    @Setter
     private double[] weights;
     @Setter
     private double bias;
@@ -99,7 +101,8 @@ public class NeuronPerceptron implements Neuron {
 
             double newMass = IntStream.range(0, inputs.length).unordered()
                     .mapToDouble(i -> {
-                        inputs[i].learn(learnRate, inputs[i].getResult() * (required / mass) * learnRate);
+                        double reqVal = (required - inputs[i].getResult()) * weights[i];
+                        inputs[i].learn(learnRate, reqVal);
                         inputs[i].predict();
                         return inputs[i].getResult() * weights[i];
                     }).sum();
