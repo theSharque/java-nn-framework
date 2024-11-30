@@ -41,12 +41,12 @@ public class NeuronGate implements Neuron {
     public NeuronGate(boolean splittable, Neuron[]... inputs) {
         this.splittable = splittable;
         this.inputs = Arrays.stream(inputs).flatMap(Stream::of).toArray(Neuron[]::new);
-        weights = DoubleStream.generate(Utils::getRandomValue).limit(this.inputs.length).toArray();
-        learnedPlus = DoubleStream.generate(() -> 0).limit(this.inputs.length).toArray();
-        learnedMinus = DoubleStream.generate(() -> 0).limit(this.inputs.length).toArray();
+        this.weights = DoubleStream.generate(Utils::getRandomValue).limit(this.inputs.length).toArray();
+        this.learnedPlus = DoubleStream.generate(() -> 0).limit(this.inputs.length).toArray();
+        this.learnedMinus = DoubleStream.generate(() -> 0).limit(this.inputs.length).toArray();
 
-        lowGate = getRandomValue();
-        calculated = false;
+        this.lowGate = getRandomValue();
+        this.calculated = false;
     }
 
     @Override
@@ -97,10 +97,6 @@ public class NeuronGate implements Neuron {
 
         if (result != required) {
             double mass = IntStream.range(0, inputs.length).unordered()
-                    .mapToDouble(i -> inputs[i].getResult() * weights[i])
-                    .sum();
-
-            double newMass = IntStream.range(0, inputs.length).unordered()
                     .mapToDouble(i -> {
                         double reqVal = (required - inputs[i].getResult()) * weights[i];
                         inputs[i].learn(learnRate, reqVal);
@@ -110,9 +106,9 @@ public class NeuronGate implements Neuron {
 
             IntStream.range(0, inputs.length).unordered().forEach(i -> {
                 if (isApplicable()) {
-                    double diff = (newMass - required) * inputs[i].getResult();
+                    double diff = (required - mass) * inputs[i].getResult();
 
-                    weights[i] -= diff * learnRate;
+                    weights[i] += diff * learnRate;
                     if (weights[i] > MAD_LIMIT || weights[i] < -MAD_LIMIT) {
                         resetWeights();
                     }
